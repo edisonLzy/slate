@@ -8,6 +8,11 @@ export type BlockQuoteElement = {
   children: Descendant[]
 }
 
+export type CalloutElement = {
+  type: 'callout'
+  children: CustomElement[]
+}
+
 export type BulletedListElement = {
   type: 'bulleted-list'
   align?: string
@@ -65,7 +70,7 @@ export type ParagraphElement = {
 
 export type TableElement = { type: 'table'; children: TableRow[] }
 
-export type TableCellElement = { type: 'table-cell'; children: CustomText[] }
+export type TableCellElement = { type: 'table-cell'; children: CustomElement[] }
 
 export type TableRowElement = { type: 'table-row'; children: TableCell[] }
 
@@ -105,6 +110,7 @@ type CustomElement =
   | VideoElement
   | CodeBlockElement
   | CodeLineElement
+  | CalloutElement
 
 export type CustomText = {
   bold?: boolean

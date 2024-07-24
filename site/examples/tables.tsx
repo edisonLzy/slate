@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react'
-import { Slate, Editable, withReact } from 'slate-react'
+import { Slate, Editable, withReact, ReactEditor } from 'slate-react'
 import {
   Editor,
   Range,
@@ -10,6 +10,12 @@ import {
 } from 'slate'
 import { withHistory } from 'slate-history'
 
+
+if(globalThis){
+  globalThis.ReactEditor = ReactEditor;
+}
+
+
 const TablesExample = () => {
   const renderElement = useCallback(props => <Element {...props} />, [])
   const renderLeaf = useCallback(props => <Leaf {...props} />, [])
@@ -17,9 +23,31 @@ const TablesExample = () => {
     () => withTables(withHistory(withReact(createEditor()))),
     []
   )
+
+  if(globalThis){
+    globalThis.ReactEditor = ReactEditor;
+    globalThis.editor = editor;
+  }
+
+
   return (
     <Slate editor={editor} initialValue={initialValue}>
-      <Editable renderElement={renderElement} renderLeaf={renderLeaf} />
+      <Editable
+        onPointerDown={e => {
+
+          // 获取到最近的element节点
+          const range = ReactEditor.findEventRange(editor, e)
+          const end = Range.end(range)
+          const nodes = [...Editor.nodes(editor, {
+            at: end,
+            match: n => SlateElement.isElement(n)
+          })];
+
+          const [node] = nodes[0];
+
+          console.log(ReactEditor.toSlateNode(editor, e.target as HTMLElement));
+        }}
+        renderElement={renderElement} renderLeaf={renderLeaf} />
     </Slate>
   )
 }
@@ -101,16 +129,43 @@ const Element = ({ attributes, children, element }) => {
   switch (element.type) {
     case 'table':
       return (
-        <table>
-          <tbody {...attributes}>{children}</tbody>
+        <table {...attributes}>
+          <tbody>{children}</tbody>
         </table>
       )
     case 'table-row':
       return <tr {...attributes}>{children}</tr>
     case 'table-cell':
       return <td {...attributes}>{children}</td>
+
+    case 'callout':
+      return (
+        <div
+          {...attributes}
+          className='callout-block'
+          style={{
+            border: '2px solid #ddd',
+            padding: '16px',
+            paddingLeft: '30px',
+            display: 'flex', gap: 5
+          }}
+        >
+          <div
+            contentEditable={false}
+            style={{
+              width: '20px',
+              height: '20px',
+              backgroundColor: 'green',
+            }}></div>
+          <div>
+            {children}
+          </div>
+        </div>
+      )
     default:
-      return <p {...attributes}>{children}</p>
+      return <p
+        className='text-block'
+        {...attributes}>{children}</p>
   }
 }
 
@@ -139,74 +194,52 @@ const initialValue: Descendant[] = [
         children: [
           {
             type: 'table-cell',
-            children: [{ text: '' }],
+            children: [
+              {
+                type: 'paragraph',
+                children: [{ text: 'Pig', bold: true }],
+              }
+            ],
           },
           {
             type: 'table-cell',
-            children: [{ text: 'Human', bold: true }],
-          },
-          {
-            type: 'table-cell',
-            children: [{ text: 'Dog', bold: true }],
-          },
-          {
-            type: 'table-cell',
-            children: [{ text: 'Cat', bold: true }],
-          },
-        ],
-      },
-      {
-        type: 'table-row',
-        children: [
-          {
-            type: 'table-cell',
-            children: [{ text: '# of Feet', bold: true }],
-          },
-          {
-            type: 'table-cell',
-            children: [{ text: '2' }],
-          },
-          {
-            type: 'table-cell',
-            children: [{ text: '4' }],
-          },
-          {
-            type: 'table-cell',
-            children: [{ text: '4' }],
-          },
-        ],
-      },
-      {
-        type: 'table-row',
-        children: [
-          {
-            type: 'table-cell',
-            children: [{ text: '# of Lives', bold: true }],
-          },
-          {
-            type: 'table-cell',
-            children: [{ text: '1' }],
-          },
-          {
-            type: 'table-cell',
-            children: [{ text: '1' }],
-          },
-          {
-            type: 'table-cell',
-            children: [{ text: '9' }],
+            children: [
+              {
+                type: 'paragraph',
+                children: [{ text: 'Pig', bold: true }],
+              },
+              {
+                type: 'callout',
+                children: [
+                  {
+                    type: 'paragraph',
+                    children: [
+                      {
+                        text: 'This is another custom block type!',
+                      }
+                    ]
+                  }
+                ]
+              },
+            ],
           },
         ],
       },
     ],
   },
   {
-    type: 'paragraph',
+    type: 'callout',
     children: [
       {
-        text: "This table is just a basic example of rendering a table, and it doesn't have fancy functionality. But you could augment it to add support for navigating with arrow keys, displaying table headers, adding column and rows, or even formulas if you wanted to get really crazy!",
-      },
-    ],
-  },
+        type: 'paragraph',
+        children: [
+          {
+            text: 'This is another custom block type!',
+          }
+        ]
+      }
+    ]
+  }
 ]
 
 export default TablesExample
